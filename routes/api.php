@@ -11,5 +11,4 @@ Route::post('/login', [UserController::class, 'login']);
 Route::apiResource('/notes', NoteController::class);
 Route::post('midtrans', [MidtransController::class, 'createTransactionSnapRedirect']);
 Route::get('midtrans/callback', [MidtransController::class, 'callback']);
-Route::post('midtrans/va-bank', [MidtransController::class, 'VaBankTransfer']);
-Route::post('midtrans/snap-bi', [MidtransController::class, 'createTransactionSnapBi']);
+Route::post('midtrans/notification', [MidtransController::class, 'notification']);

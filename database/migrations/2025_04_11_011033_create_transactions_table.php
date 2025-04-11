@@ -15,6 +15,10 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(User::class);
+            $table->string('status')->nullable();
+            $table->string('midtrans_order_id')->nullable();
+            $table->string('midtrans_token')->nullable();
+            $table->string('midtrans_redirect_url')->nullable();
             $table->timestamps();
         });
     }

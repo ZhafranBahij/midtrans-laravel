@@ -11,6 +11,7 @@ use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Midtrans\Notification;
 use Midtrans\Snap;
 use SnapBi\SnapBi;
 
@@ -99,7 +100,7 @@ class MidtransController extends Controller
                  * Transaction array to insert in Snap Params
                  */
                 $transaction_details = array(
-                    'order_id' => rand(),
+                    'order_id' => $transaction->id,
                     'gross_amount' => $transaction->transactionDetails->sum('subtotal'), // no decimal allowed for creditcard
                 );
 
@@ -112,21 +113,56 @@ class MidtransController extends Controller
             });
             
             // Get Snap Payment Page URL
-            $paymentUrl = \Midtrans\Snap::createTransaction($params)->redirect_url;
+            // {
+            //     "token": "305285d9-72dc-4207-873d-1fb223e22fb0",
+            //     "redirect_url": "https://app.sandbox.midtrans.com/snap/v4/redirection/305285d9-72dc-4207-873d-1fb223e22fb0"
+            //   }
+            // return $params;
+            $payment = \Midtrans\Snap::createTransaction($params);
 
             // Redirect to Snap Payment Page
-            return $paymentUrl;
+            return $payment->redirect_url;
+            // return response()->json([
+            //     'status_code' => 200,
+            //     'message' => 'payment url created successfully',
+            //     'data' =>  $payment->redirect_url,
+            // ], 200);
         }
-        catch (Exception $e) {
-          echo $e->getMessage();
+        catch (\Exception $e) {
+            echo $e->getMessage();
         }
     }
 
-    /**
-     * Undocumented function
-     *
-     */
-    public function createTransactionSnapRedirect2()
+    // {"order_id":"1743557812","status_code":"201","transaction_status":"pending","action":"back"}
+    // {"order_id":"18830981","status_code":"200","transaction_status":"settlement"}
+    public function callback(Request $request)
+    {
+        try {
+            
+            /**
+             * GET TRANSACTION
+             */
+            $transaction = Transaction::find($request->order_id);
+
+            /**
+             * UPDATE TRANSACTION STATUS
+             */
+            $transaction->update([
+               'status' => $request->transaction_status,
+            ]);
+
+            return response()->json([
+                'status_code' => 200,
+                'message' => 'Transaction update successfully',
+                'data' => $transaction->toArray(),
+            ], 200);
+
+        } catch (\Exception $e) {
+            echo $e->getMessage();
+        }
+    }
+
+    public function notification(Request $request)
     {
         // Set your Merchant Server Key
         \Midtrans\Config::$serverKey = env('MIDTRANS_SERVER_KEY');
@@ -137,101 +173,58 @@ class MidtransController extends Controller
         // Set 3DS transaction for credit card to true
         \Midtrans\Config::$is3ds = true;
 
-        // Required
-        $transaction_details = array(
-            'order_id' => rand(),
-            'gross_amount' => 145000, // no decimal allowed for creditcard
-        );
-
-        // Optional
-        $item1_details = array(
-            'id' => 'a1',
-            'price' => 50000,
-            'quantity' => 2,
-            'name' => "Apple"
-        );
-
-        // Optional
-        $item2_details = array(
-            'id' => 'a2',
-            'price' => 45000,
-            'quantity' => 1,
-            'name' => "Orange"
-        );
-
-        // Optional
-        $item_details = array ($item1_details, $item2_details);
-
-        // Optional
-        $billing_address = array(
-            'first_name'    => "Zhafran",
-            'last_name'     => "Bahij",
-            'address'       => "Mangga 20",
-            'city'          => "Jakarta",
-            'postal_code'   => "16602",
-            'phone'         => "081122334455",
-            'country_code'  => 'IDN'
-        );
-
-        // Optional
-        $shipping_address = array(
-            'first_name'    => "Opet",
-            'last_name'     => "Papashi",
-            'address'       => "Manggis 90",
-            'city'          => "Jakarta",
-            'postal_code'   => "16601",
-            'phone'         => "08113366345",
-            'country_code'  => 'IDN'
-        );
-
-        // Optional
-        $customer_details = array(
-            'first_name'    => "Zhafran",
-            'last_name'     => "Bahij",
-            'email'         => "fran@bahij.com",
-            'phone'         => "081122334455",
-            'billing_address'  => $billing_address,
-            'shipping_address' => $shipping_address
-        );
-
-        // Fill SNAP API parameter
-        $params = array(
-            'transaction_details' => $transaction_details,
-            'customer_details' => $customer_details,
-            'item_details' => $item_details,
-        );
-
         try {
-            // Get Snap Payment Page URL
-            $paymentUrl = Snap::createTransaction($params)->redirect_url;
-        
-            // Redirect to Snap Payment Page
-            return $paymentUrl;
+            $notif = new Notification();
         }
         catch (\Exception $e) {
-            echo $e->getMessage();
+            exit($e->getMessage());
         }
-    }
 
-    public function callback(Request $request)
-    {
-        try {
-            $note = Note::create([
-                'title' => now().' Transaction Notification'.' Rhytm of Good',
-            ]);
+        /**
+         * GET NOTIFICATION DATA
+         */
+        $notif = $notif->getResponse();
+        $status = $notif->transaction_status;
+        $type = $notif->payment_type;
+        $order_id = $notif->order_id;
+        $fraud = $notif->fraud_status;
 
-            return response()->json([
-                'status_code' => 200,
-                'message' => 'Note created successfully',
-                'data' => $note
-            ], 200);
+        /**
+         * GET & UPDATE TRANSACTION
+         */
+        $transaction = Transaction::find($order_id);
+        $transaction->update([
+            'status' => $status,
+        ]);
 
-        } catch (\Throwable $th) {
-            return response()->json([
-                'status_code' => $th->getCode(),
-                'message' => 'Something went wrong',
-                'error' => $th->getMessage()
-            ], $th->getCode());
+        if ($status == 'capture') {
+            // For credit card transaction, we need to check whether transaction is challenge by FDS or not
+            if ($type == 'credit_card') {
+                if ($fraud == 'challenge') {
+                    // TODO set payment status in merchant's database to 'Challenge by FDS'
+                    // TODO merchant should decide whether this transaction is authorized or not in MAP
+                    echo "Transaction order_id: " . $order_id ." is challenged by FDS";
+                } else {
+                    // TODO set payment status in merchant's database to 'Success'
+
+                    echo "Transaction order_id: " . $order_id ." successfully captured using " . $type;
+                }
+            }
+        } else if ($status == 'settlement') {
+            // TODO set payment status in merchant's database to 'Settlement'
+            echo "Transaction order_id: " . $order_id ." successfully transfered using " . $type;
+        } else if ($status == 'pending') {
+            // TODO set payment status in merchant's database to 'Pending'
+            echo "Waiting customer to finish transaction order_id: " . $order_id . " using " . $type;
+        } else if ($status == 'deny') {
+            // TODO set payment status in merchant's database to 'Denied'
+            echo "Payment using " . $type . " for transaction order_id: " . $order_id . " is denied.";
+        } else if ($status == 'expire') {
+            // TODO set payment status in merchant's database to 'expire'
+            echo "Payment using " . $type . " for transaction order_id: " . $order_id . " is expired.";
+        } else if ($status == 'cancel') {
+            // TODO set payment status in merchant's database to 'Denied'
+            echo "Payment using " . $type . " for transaction order_id: " . $order_id . " is canceled.";
         }
     }
 }
