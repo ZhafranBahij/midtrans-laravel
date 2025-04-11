@@ -125,6 +125,7 @@ class MidtransController extends Controller
                     'transaction_details' => $transaction_details,
                     'customer_details' => $customer_details,
                     // 'item_details' => $item_details,
+                    'transaction' => $transaction,
                 );
             });
 
@@ -136,7 +137,16 @@ class MidtransController extends Controller
             //     "redirect_url": "https://app.sandbox.midtrans.com/snap/v4/redirection/305285d9-72dc-4207-873d-1fb223e22fb0"
             //   }
             // return $params;
+            $transaction = array_pop($params);
             $payment = \Midtrans\Snap::createTransaction($params);
+
+            /**
+             * ADD PAYMENT URL TO TRANSACTION
+             */
+            $transaction->update([
+                'midtrans_token' => $payment->token,
+                'midtrans_redirect_url' => $payment->redirect_url,
+            ]);
 
             // Redirect to Snap Payment Page
             return $payment->redirect_url;
