@@ -29,6 +29,7 @@ class TransactionSnapRedirectRequest extends FormRequest
             'transactions' => 'required|array',
             'transactions.*.product_id' =>'required|integer',
             'transactions.*.quantity' =>'required|integer',
+            'voucher_id' => 'nullable|integer',
         ];
     }
 }

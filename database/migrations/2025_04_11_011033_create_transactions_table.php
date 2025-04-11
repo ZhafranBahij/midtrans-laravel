@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Models\Voucher;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,12 +14,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('transactions', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id');
             $table->foreignIdFor(User::class);
+            $table->foreignIdFor(Voucher::class)->nullable();
             $table->string('status')->nullable();
-            $table->string('midtrans_order_id')->nullable();
+            $table->string('midtrans_payment_method')->nullable();
             $table->string('midtrans_token')->nullable();
             $table->string('midtrans_redirect_url')->nullable();
+            $table->timestamp('settlement_time')->nullable();
+            $table->string('fraud_status')->nullable();
+            $table->integer('total_before_discount')->nullable();
+            $table->integer('total')->nullable();
             $table->timestamps();
         });
     }

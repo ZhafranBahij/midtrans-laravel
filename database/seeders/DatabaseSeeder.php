@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             NoteSeeder::class,
             ProductSeeder::class,
+            VoucherSeeder::class,
         ]);
 
         User::create([
