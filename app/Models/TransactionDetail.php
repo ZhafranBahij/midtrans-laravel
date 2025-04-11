@@ -9,4 +9,9 @@ class TransactionDetail extends Model
 {
     /** @use HasFactory<\Database\Factories\TransactionDetailFactory> */
     use HasFactory;
+
+    public function transaction()
+    {
+        return $this->belongsTo(Transaction::class);
+    }
 }

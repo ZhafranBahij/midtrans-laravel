@@ -22,7 +22,13 @@ class TransactionSnapRedirectRequest extends FormRequest
     public function rules(): array
     {
         return [
-            
+            'user.name' =>'required|string|max:255',
+            'user.mobile_number' =>'required|string|max:20',
+            'user.email' =>'required|string|email|max:255',
+            'user.address' =>'required|string|max:255',
+            'transactions' => 'required|array',
+            'transactions.*.product_id' =>'required|integer',
+            'transactions.*.quantity' =>'required|integer',
         ];
     }
 }
