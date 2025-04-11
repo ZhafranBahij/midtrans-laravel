@@ -41,6 +41,11 @@
                                 <a class="nav-link" href="{{ route('note.index') }}">{{ __('Note') }}</a>
                             </li>
                         @endif
+                        @if (Route::has('product.index'))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('product.index') }}">{{ __('product') }}</a>
+                            </li>
+                        @endif
                     </ul>
 
                     <!-- Right Side Of Navbar -->
