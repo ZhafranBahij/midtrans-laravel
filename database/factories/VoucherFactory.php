@@ -21,7 +21,7 @@ class VoucherFactory extends Factory
             'discount_percentange' => random_int(10, 50),
             'start_date' => now(),
             'end_date' => now()->addDays(random_int(1, 30)),
-            'description' => fake()->paragraph(),
+            'description' => fake()->sentences(3, true),
         ];
     }
 }

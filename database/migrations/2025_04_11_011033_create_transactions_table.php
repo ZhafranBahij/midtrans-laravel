@@ -21,8 +21,9 @@ return new class extends Migration
             $table->string('midtrans_payment_method')->nullable();
             $table->string('midtrans_token')->nullable();
             $table->string('midtrans_redirect_url')->nullable();
-            $table->timestamp('settlement_time')->nullable();
             $table->string('fraud_status')->nullable();
+            $table->timestamp('settlement_time')->nullable();
+            $table->string('qr_url')->nullable();
             $table->integer('total_before_discount')->nullable();
             $table->integer('total')->nullable();
             $table->timestamps();
