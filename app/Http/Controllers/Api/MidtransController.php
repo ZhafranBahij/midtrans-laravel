@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TransactionSnapRedirectRequest;
+use App\Models\Customer;
 use App\Models\Note;
 use App\Models\Product;
 use App\Models\Transaction;
@@ -41,25 +42,28 @@ class MidtransController extends Controller
                 /**
                  * FIND OR CREATE USER
                  */
-                $user = User::firstOrCreate([
+                $user = Customer::firstOrCreate([
                     'email' => $validated['user']['email'],
                 ], [
                     'name' => $validated['user']['name'],
                     'phone' => $validated['user']['mobile_number'],
-                    'password' => 12345678
                 ]);
 
                 /**
                  * FIND VOUCHER
                  */
-                $voucher = Voucher::find($validated['voucher_id']);
+                $voucher = Voucher::firstOrCreate([
+                    'name' => $validated['voucher']['name'],
+                ], [
+                    'discount_percentange' => $validated['voucher']['discount_percentange'],
+                ]);
                 
                 /**
                  * CREATE TRANSACTION IN DATABASE
                  */
                 $transaction = Transaction::create([
                     'voucher_id' => $voucher->id ?? null,
-                    'user_id' => $user->id,
+                    'customer_id' => $user->id,
                 ]);
 
                 /**
@@ -84,7 +88,11 @@ class MidtransController extends Controller
                 foreach ($validated['transactions'] as $item) {
 
                     // Find Product
-                    $product = Product::find($item['product_id']);
+                    $product = Product::firstOrCreate([
+                        'name' => $item['name'],
+                    ], [
+                        'price' => $item['price'],
+                    ]);
 
                     // Create transaction details for database
                     $transaction->transactionDetails()->create([
@@ -284,10 +292,10 @@ class MidtransController extends Controller
         }
         catch (\Exception $e) {
             // return response()->json([
-            //     'status_code' => $e->getCode(),
+            //     'status_code' => 400,
             //     'message' => 'Something went wrong',
             //      'error' => $e->getMessage()
-            //  ], $e->getCode());
+            //  ], 400);
         }
     }
 }

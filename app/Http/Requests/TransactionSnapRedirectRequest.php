@@ -26,10 +26,14 @@ class TransactionSnapRedirectRequest extends FormRequest
             'user.mobile_number' =>'required|string|max:20',
             'user.email' =>'required|string|email|max:255',
             'user.address' =>'required|string|max:255',
+
             'transactions' => 'required|array',
-            'transactions.*.product_id' =>'required|integer',
+            'transactions.*.name' =>'required|string|max:255',
             'transactions.*.quantity' =>'required|integer',
-            'voucher_id' => 'nullable|integer',
+            'transactions.*.price' =>'required|integer',
+            
+            'voucher.name' => 'nullable|string|max:255',
+            'voucher.discount_percentange' => 'nullable|integer|max:100',
         ];
     }
 }
